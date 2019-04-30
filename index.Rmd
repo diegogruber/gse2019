@@ -1,0 +1,254 @@
+---
+title: "Building analytical apps"
+subtitle: "Best practices with examples in R"
+author: "Diego Gruber"
+date: "`r Sys.Date()`"
+output: 
+  ioslides_presentation: 
+    logo: logo_color-k_bg.png
+    widescreen: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Objectives
+
+- Understanding APIs
+- Consuming APIs from R
+- Building analytical applications using best practices, R packages edition
+- Setting up a server and launching your own analytical API
+
+## Preparation
+
+- Deploy Ubuntu 18 server on Azure, AWS, etc.
+- If you are using a Windows client, install a [Linux shell](http://mobaxterm.mobatek.net/download.html)
+- [Install R](https://cran.r-project.org/bin/linux/ubuntu/README.html)
+- [Install RStudio Server](https://www.rstudio.com/products/rstudio/download-server/)
+- [Allow inobund connections to port 8787](https://docs.microsoft.com/en-us/azure/virtual-machines/windows/nsg-quickstart-portal)
+- Create a user to access RStudio: `sudo adduser [user name]`
+
+# APIs
+
+## What is an API?
+
+- "Application Programming Interface"
+- A way for computers to talk to each other.
+- Reference: [Zapier](https://zapier.com/learn/apis/)
+
+## Why build your own API?
+
+- Successful machine learning:
+    - Academic: model fits data well, good predictive accuracy
+    - Enterprise: model that fits product, integrates well with other enterprise systems
+- Bridge gap between data scientists and developers
+- Separation of concerns
+- Rapidly pivot software features in response to end user demands
+- A thoughtful [article](https://blogs.mulesoft.com/biz/api/apis-future-of-data-science/) on the subject
+
+## HTTP
+
+- Most APIs these days are based on the Hypertext Transfer Protocol, **HTTP:**.
+- A **protocol** is an accepted set of rules that govern how two computers can speak to each other.
+- Communication between a **host** (server) and a **client** occurs, via a **request/response pair**.
+
+![](https://cdn.tutsplus.com/net/authors/jeremymcpeak/http1-request-response.png)
+
+- Communication is [stateless](http://stackoverflow.com/questions/13200152/why-say-that-http-is-a-stateless-protocol) (the server is not *required* to track state over multiple requests, though in practice this may be achieved by session IDs or cookies)
+
+## Message Formats
+
+The HTTP specification states that a request or response message has the following generic structure:
+
+```
+message = <start-line>
+          *(<message-header>)
+          CRLF
+          [<message-body>]
+
+<start-line> = Request-Line | Status-Line 
+<message-header> = Field-Name ':' Field-Value
+```
+
+## Request
+
+- Uniform Resource Locator (**URL**):
+
+![](https://cdn.tutsplus.com/net/authors/jeremymcpeak/http1-url-structure.png)
+
+- **Methods** (or verbs) are actions to be performed on host:
+    - GET: fetch existing resource
+    - POST: create new resource
+    - PUT, DELETE, others.
+- **Headers** provide meta-information about a request.
+- The **body** contains data the client wants to send the server. 
+
+## Response
+
+- **Status codes** tell the client how to interpret the server response:
+    - 2xx (OK)
+    - 3xx (Redirection)
+    - 4xx (Client Error)
+    - 5xx (Server Error)
+- Response headers and body follow the same format as requests.
+- Data typically returned in XML or JSON formats.
+
+## JSON
+
+- A very simple format that has two pieces: **keys** and **values**. 
+- Keys represent an attribute about the object being described.
+
+```
+{
+  "crust": "original",
+  "toppings": ["cheese", "pepperoni", "garlic"],
+  "status": "cooking",
+  "customer": {
+    "name": "Brian",
+    "phone": "573-111-1111"
+  }
+}
+```
+
+- If given the choice, choose JSON over XML.
+
+## Consuming APIs
+
+Example:
+
+- Install package `httr` (a Python equivalent would be the `requests`library)
+- Use a geocoding API such as LocationIQ to retrieve longitude and latitude for Barcelona or any other location
+
+Exercise:
+
+- Sign up for [Dark Sky weather API](https://darksky.net/dev/).
+- Retrieve current weather for the location you used in the example
+
+# Building analytic applications
+
+## Good practices in software development
+
+- Promote a friendly development environment and encourage collaboration
+- Help avoid terrible mistakes
+- Encourage reuse
+- Reduce complexity, reducing the knowledge gap for new developers
+- Avoid conflict
+- Reduce the load on engineering & operations
+- Improve deliverability and maintainability
+- Make the customer happy
+
+*You are losing the freedom to do whatever you want with your code, but it's a price worth paying!*
+
+## Software projects
+
+- **A software project in the programming language X is a series of files and folders arranged in a standardized way** (e.g. Python or R packages)
+- To create an R Package, install packages `usethis` and `devtools`
+- Run `usethis::create_package("[your pkg name]")`
+
+![](https://methodsblog.files.wordpress.com/2015/11/stott-1.jpg?w=768&h=348)
+
+## References
+
+- [R Packages](http://r-pkgs.had.co.nz) by H. Wickham
+- [The devtools cheatsheet](https://www.rstudio.com/wp-content/uploads/2015/03/devtools-cheatsheet.pdf)
+
+## Functions
+
+- The goal is to hide complexity
+- Functions are the most basic construction for code reuse
+- They encapsulate a data transformation
+    - Input arguments come in => Output values come out
+- Name them accordingly! Roughly: use verbs for functions, nouns for inputs/outputs
+    - `download_data` is a decent function name
+    - `project_data` is an awful function name
+- Follow coding conventions, do not mix coding styles within a package!
+- Functions live in the `R/` folder. `usethis::use_r("[function name]")`
+
+## Source control
+
+- Lets you track changes to your code, restore previous versions
+- Keep backups in a remote repository 
+- Create multiple development branches: master (production/stable branch), development (beta branch), feature branches (experiment with new ideas), etc. 
+- Move changes to a more stable branch when they're ready
+- Source control fosters collaboration!
+- The most popular tool for source control nowadays is git
+- `usethis::use_git()`
+
+## Documentation
+
+**It's about guaranteeing your functions are properly understood and used, checking that what you do makes sense**
+
+- Document functions with roxygen comments (`#'`) in R (docstrings in Python)
+- Install `roxygen2`. Insert roxygen skeleton for your function and fill-in the details, for example:
+    - `@param` to describe function inputs
+    - `@return` to describe function outputs
+    - `@import` to list function dependencies
+    - `@export` if your function should be visible to the end user
+- `devtools::document()` generates help files in `man/`. View them with `help()`
+- Vignettes are a different kind of documentation: long-form guides to your package. Also quite important! `usethis::use_vignette()`
+
+## Unit testing
+
+Tests prevent serious trauma: With the customer / Within the team.
+
+- Install `testthat`
+- `usethis::use_test("[test name]")`
+- Tests live in `test/`
+- Run `devtools::test()`
+- Source control + automated unit testing = Continuos Integration! 
+- Determine coverage with `covr::package_coverage()`
+
+**Higher test coverage means more peace of mind to evolve your project, giving you confidence you won't break things that work!**
+
+## Dependency management
+
+Add dependencies to your DESCRIPTION file with `usethis::use_package()`. 
+
+To track specific versions of your dependencies: 
+
+- Install `packrat` in R
+- Track dependencies with `packrat::snapshot()`
+- Restore dependencies with `packrat::restore()`
+- Conda or pip environments in Python
+
+To go beyond managing R package dependencies, consider Docker.
+
+## OpenCPU
+
+- The [OpenCPU](https://www.opencpu.org/) server provides a reliable API for data analysis based on R.
+- Compatible with any language or framework that speaks HTTP.
+- Uses **standard R packaging** to develop, ship and deploy web applications.
+- Support for parallel computing and asynchronous requests.
+- Can be used, modified and redistributed for both for open source and proprietary projects.
+
+## Launch your API
+
+- [Install OpenCPU](https://www.opencpu.org/download.html)
+<!-- - Install `opencpu` package -->
+<!-- - Type `opencpu::opencpu$start()` to start the API. -->
+<!-- - Type `opencpu::opencpu$browse()` to test it. -->
+- Open port 80 (or 8004) to share your API with others
+- Endpoint: 
+
+`{url}/ocpu/user/{username}/library/{pkgname}/R/{function}/{format}`
+
+- Send a POST request using your function's parameters
+
+## A Simple Interface
+
+- You can include a UI in your package's inst/www directory.
+- See examples at [OpenCPU Apps](https://www.opencpu.org/apps.html)
+- Install the `opencpu` package
+- Run one of the example packages directly from Github: `opencpu::ocpu_start_app("rwebapps/nabel")`
+
+## Homework!
+
+- Create a simple package in R with one or two basic functions
+- Make sure your functions are well documented and have unit tests
+- Push your project to a Github repo and send me the link
+
+Choose one of thw following options:
+
+- One of your functions should download data from a free API (not LocationIQ or DarkSky, sorry). If the API requires a token, do not include it in your code! Send me the key by email so I can test your function
+- Launch an API server for your package. Send me a URL where I can test your API. I'll try it out asap and let you know when you can shut it down
